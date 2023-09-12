@@ -7,7 +7,6 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 Entrez.email = config["DEFAULT"]["email"]
 Entrez.api_key = config["DEFAULT"]["api_key"]
-print(Entrez.email, Entrez.api_key)
 
 
 def simulate(gene):
