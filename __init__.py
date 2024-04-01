@@ -25,28 +25,52 @@ def simulate(gene):
         for base in "ATCG":
             if base != cds[codon]:
                 seq = Seq(base) + cds[codon + 1 : codon + 3]
-                variants.append(
-                    (
-                        f"{seqrecord.id}:c.{codon+1}{cds[codon]}>{base}",
-                        f"{protein_id}:p.{protein[index]}{index+1}{seq.translate()}",
+                if protein[index] != seq.translate():
+                    variants.append(
+                        (
+                            f"{seqrecord.id}:c.{codon+1}{cds[codon]}>{base}",
+                            f"{protein_id}:p.{protein[index]}{index+1}{seq.translate()}",
+                        )
                     )
-                )
+                else:
+                    variants.append(
+                        (
+                            f"{seqrecord.id}:c.{codon+1}{cds[codon]}>{base}",
+                            f"{protein_id}:p.{protein[index]}{index+1}=",
+                        )
+                    )
             if base != cds[codon + 1]:
                 seq = cds[codon] + Seq(base) + cds[codon + 2]
-                variants.append(
-                    (
-                        f"{seqrecord.id}:c.{codon+2}{cds[codon+1]}>{base}",
-                        f"{protein_id}:p.{protein[index]}{index+1}{seq.translate()}",
+                if protein[index] != seq.translate():
+                    variants.append(
+                        (
+                            f"{seqrecord.id}:c.{codon+2}{cds[codon+1]}>{base}",
+                            f"{protein_id}:p.{protein[index]}{index+1}{seq.translate()}",
+                        )
                     )
-                )
+                else:
+                    variants.append(
+                        (
+                            f"{seqrecord.id}:c.{codon+2}{cds[codon+1]}>{base}",
+                            f"{protein_id}:p.{protein[index]}{index+1}=",
+                        )
+                    )
             if base != cds[codon + 2]:
                 seq = cds[codon : codon + 2] + Seq(base)
-                variants.append(
-                    (
-                        f"{seqrecord.id}:c.{codon+3}{cds[codon+2]}>{base}",
-                        f"{protein_id}:p.{protein[index]}{index+1}{seq.translate()}",
+                if protein[index] != seq.translate():
+                    variants.append(
+                        (
+                            f"{seqrecord.id}:c.{codon+3}{cds[codon+2]}>{base}",
+                            f"{protein_id}:p.{protein[index]}{index+1}{seq.translate()}",
+                        )
                     )
-                )
+                else:
+                    variants.append(
+                        (
+                            f"{seqrecord.id}:c.{codon+3}{cds[codon+2]}>{base}",
+                            f"{protein_id}:p.{protein[index]}{index+1}=",
+                        )
+                    )
     return variants
 
 
