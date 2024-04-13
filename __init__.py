@@ -3,13 +3,13 @@ import os
 from Bio import Entrez, SeqIO
 from Bio.Seq import Seq
 from Bio.SeqUtils import seq3
-from Bio.Data.IUPACData import protein_letters, unambiguous_dna_letters
+from Bio.Data.IUPACData import unambiguous_dna_letters
 
 Entrez.email = os.environ["EMAIL"]
 Entrez.api_key = os.environ["API_KEY"]
 
 
-def snvsimulate(gene):
+def snv(gene):
     variants = []
     handle = Entrez.esearch(
         db="nucleotide", term=f'{gene}[gene] "mane select"[keyword]'
@@ -80,19 +80,4 @@ def snvsimulate(gene):
                             f"{protein_id}:p.{seq3(protein[index])}{index+1}=",
                         )
                     )
-    return variants
-
-
-def aasimulate(gene):
-    variants = []
-    handle = Entrez.esearch(db="protein", term=f'{gene}[gene] "mane select"[keyword]')
-    record = Entrez.read(handle)
-    handle = Entrez.efetch(
-        db="protein", id=record["IdList"], rettype="gp", retmode="text"
-    )
-    seqrecord = SeqIO.read(handle, "genbank")
-    for index, aa in enumerate(seqrecord, 1):
-        for AA in protein_letters:
-            if AA != aa:
-                variants.append(aa + str(index) + AA)
     return variants
