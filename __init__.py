@@ -111,7 +111,20 @@ def mnv(gene: str) -> list:
                                          f"{protein_id}:p.{protein[index]}{index + 1}{seq.translate()}",
                                          f"{protein_id}:p.{seq3(protein[index])}{index + 1}{seq3(seq.translate())}",))
                 else:
-                    variants.append((f"{seqrecord.id}:c.{codon + 1}_{codon + 3}{cds[codon:codon + 3]}>{base}",
+                    if base[0] == cds[codon] and base[1] == cds[codon + 1] and base[2] != cds[codon + 2]:
+                        variants.append((f"{seqrecord.id}:c.{codon + 3}{cds[codon + 2]}>{base[2]}",
+                                         f"{protein_id}:p.{protein[index]}{index + 1}=",
+                                         f"{protein_id}:p.{seq3(protein[index])}{index + 1}=",))
+                    elif base[0] == cds[codon] and base[1] != cds[codon + 1] and base[2] == cds[codon + 2]:
+                        variants.append((f"{seqrecord.id}:c.{codon + 2}{cds[codon + 1]}>{base[1]}",
+                                         f"{protein_id}:p.{protein[index]}{index + 1}=",
+                                         f"{protein_id}:p.{seq3(protein[index])}{index + 1}=",))
+                    elif base[0] != cds[codon] and base[1] == cds[codon + 1] and base[2] == cds[codon + 2]:
+                        variants.append((f"{seqrecord.id}:c.{codon + 1}{cds[codon]}>{base[0]}",
+                                         f"{protein_id}:p.{protein[index]}{index + 1}=",
+                                         f"{protein_id}:p.{seq3(protein[index])}{index + 1}=",))
+                    else:
+                        variants.append((f"{seqrecord.id}:c.{codon + 1}_{codon + 3}{cds[codon:codon + 3]}>{base}",
                                      f"{protein_id}:p.{protein[index]}{index + 1}=",
                                      f"{protein_id}:p.{seq3(protein[index])}{index + 1}=",))
     return variants
