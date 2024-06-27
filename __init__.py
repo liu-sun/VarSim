@@ -17,6 +17,7 @@ codons = (
 
 def snv(gene: str) -> list:
     variants = []
+    exon = []
     handle = Entrez.esearch(db="nucleotide", term=f'{
                             gene}[gene] "mane select"[keyword]')
     record = Entrez.read(handle)
@@ -27,6 +28,8 @@ def snv(gene: str) -> list:
         if feature.type == "CDS":
             protein = "".join(feature.qualifiers.get("translation"))
             protein_id = "".join(feature.qualifiers.get("protein_id"))
+            global slice
+            slice = feature.location.start
             cds = feature.location.extract(seqrecord).seq
             utr5 = SimpleLocation(
                 0, feature.location.start).extract(seqrecord).seq
@@ -85,6 +88,30 @@ def snv(gene: str) -> list:
                 variants.append((f"{seqrecord.id}:c.*{index+1}{utr3[index]}>{base}",
                                  "",
                                  "",))
+    # GT-AG rule
+    for feature in seqrecord.features:
+        if feature.type == "exon":
+            exon.extend((feature.location.start, feature.location.end))
+        for cord in range(1, len(exon)-1, 2):
+            junction = (exon[cord], exon[cord+1])
+            for base in unambiguous_dna_letters:
+                if base != "G":
+                    variants.append((f"{seqrecord.id}:c.{junction[0]-slice}+1{"G"}>{base}",
+                                     "",
+                                     "",))
+                if base != "T":
+                    variants.append((f"{seqrecord.id}:c.{junction[0]-slice}+2{"T"}>{base}",
+                                     "",
+                                     "",))
+                if base != "A":
+                    variants.append((f"{seqrecord.id}:c.{junction[1]+1-slice}-2{"A"}>{base}",
+                                     "",
+                                     "",))
+                if base != "G":
+                    variants.append((f"{seqrecord.id}:c.{junction[1]+1-slice}-1{"G"}>{base}",
+                                     "",
+                                     "",))
+
     return variants
 
 
@@ -168,3 +195,7 @@ def mnv(gene: str) -> list:
                                              protein[index]}{index + 1}=",
                                          f"{protein_id}:p.{seq3(protein[index])}{index + 1}=",))
     return variants
+
+
+if __name__ == "__main__":
+    print(snv("SLC22A5"))
