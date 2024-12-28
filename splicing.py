@@ -23,9 +23,21 @@ def splicing(gene: str) -> list:
             start = feature.location.start
     for feature in seqrecord.features:
         if feature.type == "exon":
-            splicing.extend(
-                (feature.location.start - start, feature.location.end - start)
-            )
+            if feature.location.start < start and feature.location.end < start:
+                splicing.extend(
+                    (
+                        feature.location.start - start - 1,
+                        feature.location.end - start - 1,
+                    )
+                )
+            elif feature.location.start < start and feature.location.end > start:
+                splicing.extend(
+                    (feature.location.start - start - 1, feature.location.end - start)
+                )
+            else:
+                splicing.extend(
+                    (feature.location.start - start, feature.location.end - start)
+                )
     for coordinate in range(1, len(splicing) - 1, 2):
         site = splicing[coordinate], splicing[coordinate] + 1
         for base in unambiguous_dna_letters:
@@ -43,4 +55,4 @@ def splicing(gene: str) -> list:
 if __name__ == "__main__":
     import pprint
 
-    pprint.pprint(splicing("SLC22A5"))
+    pprint.pprint(splicing("TMPRSS6"))
