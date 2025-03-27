@@ -190,15 +190,15 @@ def splicing(gene: str) -> list:
 
     for coordinate in range(1, len(splicing) - 1, 2):
         site = splicing[coordinate], splicing[coordinate] + 1
-    for base in unambiguous_dna_letters:
-        if base != "G":
-            variants.append((f"{seqrecord.id}:c.{site[0]}+1G>{base}"))
-        if base != "T":
-            variants.append((f"{seqrecord.id}:c.{site[0]}+2T>{base}"))
-        if base != "A":
-            variants.append((f"{seqrecord.id}:c.{site[1]}-2A>{base}"))
-        if base != "G":
-            variants.append((f"{seqrecord.id}:c.{site[1]}-1G>{base}"))
+        for base in unambiguous_dna_letters:
+            if base != "G":
+                variants.append((f"{seqrecord.id}:c.{site[0]}+1G>{base}"))
+            if base != "T":
+                variants.append((f"{seqrecord.id}:c.{site[0]}+2T>{base}"))
+            if base != "A":
+                variants.append((f"{seqrecord.id}:c.{site[1]}-2A>{base}"))
+            if base != "G":
+                variants.append((f"{seqrecord.id}:c.{site[1]}-1G>{base}"))
     return variants
 
 
@@ -411,4 +411,4 @@ def inframe_dup(gene: str) -> list:
 
 
 if __name__ == "__main__":
-    print(splicing("INS"))
+    print(splicing("TMPRSS6"))
