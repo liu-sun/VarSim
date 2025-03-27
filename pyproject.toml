@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "varsim"
-version = "1.0.2"
+version = "1.0.3"
 authors = [
   { name="Liu Sun", email="sunliu@yxnu.edu.cn" },
   { name="Jian Yang", email="yangjian@yxnu.edu.cn" },
@@ -12,6 +12,9 @@ authors = [
 description = "Variant Simulator"
 readme = "README.md"
 requires-python = ">=3.8"
+dependencies = [
+  "biopython",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
