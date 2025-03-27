@@ -5,7 +5,7 @@ VarSim generates simulations for all possible single nucleotide variants (SNVs) 
 ```powershell
 pip install varsim
 ```
-Variation Simulation
+Variant Simulator
 
 ```python
 cds("INS")
@@ -82,7 +82,7 @@ NM_000207.3:c.*73C>T
 ```python
 splicing("INS")
 ```
-NM_000207.3:c.187+2T>
+NM_000207.3:c.187+2T>G
 
 NM_000207.3:c.188-2A>G
 
