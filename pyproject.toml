@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "varsim"
-version = "1.0.3"
+version = "1.0.4"
 authors = [
   { name="Liu Sun", email="sunliu@yxnu.edu.cn" },
   { name="Jian Yang", email="yangjian@yxnu.edu.cn" },
