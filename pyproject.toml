@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "varsim"
-version = "1.0.4"
+version = "1.9.0"
 authors = [
   { name="Liu Sun", email="sunliu@yxnu.edu.cn" },
   { name="Jian Yang", email="yangjian@yxnu.edu.cn" },
 ]
-description = "Variant Simulator"
+description = "Generates all possible SNVs for MANE transcripts using HGVS nomenclature. Note: Not to be confused with the read simulator 'VarSim' (PMID: 25524895)."
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
