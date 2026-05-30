@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "varsim"
-version = "1.9.0"
+version = "2.0.0"
 authors = [
   { name="Liu Sun", email="sunliu@yxnu.edu.cn" },
   { name="Jian Yang", email="yangjian@yxnu.edu.cn" },
 ]
-description = "Generates all possible SNVs for MANE transcripts using HGVS nomenclature. Note: Not to be confused with the read simulator 'VarSim' (PMID: 25524895)."
+description = "HGVS variant simulator & toolkit: simulate SNVs and frameshift variants for MANE transcripts, plus parse, validate, normalize, backtranslate, convert, extract, liftover, transcribe, and translate HGVS descriptions."
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
@@ -17,10 +17,20 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Intended Audience :: Science/Research",
+    "Development Status :: 5 - Production/Stable",
 ]
 
 [project.urls]
 Homepage = "https://github.com/liu-sun/VarSim"
 Issues = "https://github.com/liu-sun/VarSim/issues"
+Documentation = "https://github.com/liu-sun/VarSim#readme"
