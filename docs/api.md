@@ -4,23 +4,6 @@ All public functions organized by category.
 
 ---
 
-## Simulation
-
-Generate all possible HGVS variant descriptions for a gene's MANE transcript.
-
-| Function | Returns | Description |
-|---|---|---|
-| `cds(gene)` | `list[tuple]` | All CDS single-nucleotide variants. Each: `(c.HGVS, p.HGVS_1l, p.HGVS_3l)` |
-| `missense(gene)` | `list[tuple]` | All codon-level variants with protein effect (missense/silent/start-loss) |
-| `utr5(gene)` | `list[str]` | All 5-prime UTR SNVs (`c.-N`) |
-| `utr3(gene)` | `list[str]` | All 3-prime UTR SNVs (`c.*N`) |
-| `splice_site(gene)` | `list[str]` | Canonical GT-AG splice dinucleotide SNVs (`c.N±O`) |
-| `aa_sub(gene)` | `list[tuple]` | All possible amino acid substitutions. Each: `(p.HGVS_1l, p.HGVS_3l)` |
-| `codon_sub(gene)` | `list[str]` | All codon-to-codon substitutions as nucleotide HGVS strings |
-| `frameshift(gene)` | `list[tuple]` | All 1bp deletions + 4×1bp insertions per CDS position. Each: `(c.HGVS, p.HGVS_1l, p.HGVS_3l)` |
-
----
-
 ## Parsing
 
 | Function | Returns | Description |
@@ -37,7 +20,7 @@ Generate all possible HGVS variant descriptions for a gene's MANE transcript.
 |---|---|---|
 | `is_valid_syntax(hgvs_str)` | `bool` | Check if string can be parsed (syntax only) |
 | `validate(hgvs_str)` | `list[dict]` | Full validation with issue list. Issues: `{severity, message}` |
-| `validate_semantic(hgvs_str, ref_seq=None)` | `list[dict]` | Semantic validation (ref allele match, coordinate bounds) |
+| `validator.validate_semantic(hgvs_str, ref_seq=None)` | `list[dict]` | Semantic validation (ref allele match, coordinate bounds) |
 | `is_valid(hgvs_str, ref_seq=None)` | `bool` | Combined syntax + semantic validation |
 
 ---
@@ -47,8 +30,8 @@ Generate all possible HGVS variant descriptions for a gene's MANE transcript.
 | Function | Returns | Description |
 |---|---|---|
 | `normalize(hgvs_str, ref_seq=None)` | `str` | Full normalization: 3′ shift → ins→dup → allele minimization |
-| `normalize_3prime_shift(hgvs_str, ref_seq)` | `str` | 3′ shift only |
-| `ins_to_dup(hgvs_str, ref_seq)` | `str` | Convert insertion to duplication if applicable |
+| `normalizer.normalize_3prime_shift(hgvs_str, ref_seq)` | `str` | 3′ shift only |
+| `normalizer.ins_to_dup(hgvs_str, ref_seq)` | `str` | Convert insertion to duplication if applicable |
 
 ---
 
@@ -96,7 +79,7 @@ Generate all possible HGVS variant descriptions for a gene's MANE transcript.
 |---|---|---|
 | `c_to_g(c_hgvs, gene)` | `str` | Coding HGVS → genomic HGVS |
 | `g_to_c(g_hgvs, gene)` | `str` | Genomic HGVS → coding HGVS |
-| `get_cds_exon_map(gene)` | `list[dict]` | Exon structure mapping for a gene |
+| `transcription.get_cds_exon_map(gene)` | `list[dict]` | Exon structure mapping for a gene |
 
 ---
 
@@ -105,7 +88,7 @@ Generate all possible HGVS variant descriptions for a gene's MANE transcript.
 | Function | Returns | Description |
 |---|---|---|
 | `translate_variant(c_hgvs, gene)` | `str` | Coding HGVS → protein HGVS |
-| `translate_variants(c_hgvs_list, gene)` | `list[str]` | Batch translation (single API fetch) |
+| `translation.translate_variants(c_hgvs_list, gene)` | `list[str]` | Batch translation (single API fetch) |
 | `get_protein_effect(c_hgvs, gene)` | `dict` | Detailed effect: `{p_hgvs_1letter, p_hgvs_3letter, effect_type, position, ref_aa, alt_aa}` |
 
 **Effect types:** `missense`, `silent`, `nonsense`, `frameshift`, `stop_loss`, `start_loss`, `extension`, `non-coding`

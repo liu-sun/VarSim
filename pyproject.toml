@@ -4,14 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "varsim"
-version = "2.0.0"
+version = "2.0.1"
 authors = [
   { name="Liu Sun", email="sunliu@yxnu.edu.cn" },
   { name="Jian Yang", email="yangjian@yxnu.edu.cn" },
 ]
-description = "HGVS variant simulator & toolkit: simulate SNVs and frameshift variants for MANE transcripts, plus parse, validate, normalize, backtranslate, convert, extract, liftover, transcribe, and translate HGVS descriptions."
+description = "HGVS variant toolkit: parse, validate, normalize, backtranslate, convert, extract, liftover, transcribe, and translate HGVS descriptions."
 readme = "README.md"
 requires-python = ">=3.8"
+license = "MIT"
 dependencies = [
   "biopython",
 ]
@@ -24,7 +25,6 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
-    "License :: OSI Approved :: MIT License",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Intended Audience :: Science/Research",
     "Development Status :: 5 - Production/Stable",

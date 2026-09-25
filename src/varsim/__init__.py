@@ -1,20 +1,10 @@
-"""VarSim — Sequence variant simulator for MANE transcripts.
+"""VarSim — HGVS toolkit.
 
-Generates simulations for all possible single nucleotide variants (SNVs)
-and frameshift indels for MANE Select/Plus Clinical transcripts,
-expressed in HGVS nomenclature.
-
-Also provides HGVS tooling: parsing, validation, normalization,
+Provides HGVS tooling: parsing, validation, normalization,
 backtranslation, conversion, extraction, liftover, transcription,
 and translation.
 """
 
-from .snv import cds, utr5, utr3
-from .splicing import splice_site
-from .protein import aa_sub
-from .codon import codon_sub
-from .missense import missense
-from .frameshift import frameshift
 from .parser import parse
 from .validator import validate, is_valid, is_valid_syntax
 from .normalizer import normalize
@@ -26,16 +16,6 @@ from .transcription import c_to_g, g_to_c
 from .translation import translate_variant, get_protein_effect
 
 __all__ = [
-    # Simulation
-    "cds",
-    "utr5",
-    "utr3",
-    "splice_site",
-    "aa_sub",
-    "codon_sub",
-    "missense",
-    "frameshift",
-    # HGVS tooling
     "parse",
     "validate",
     "is_valid",

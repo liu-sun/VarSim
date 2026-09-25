@@ -18,7 +18,31 @@ from ._logging import get_logger
 logger = get_logger(__name__)
 
 Entrez.email = os.environ["EMAIL"]
-Entrez.api_key = os.environ["API_KEY"]
+Entrez.api_key = os.environ.get("API_KEY") or None
+
+
+# Supported MANE transcript types and their canonical NCBI keywords.
+_MANE_TYPES = {
+    "mane select": "MANE Select",
+    "mane plus clinical": "MANE Plus Clinical",
+}
+
+
+def _mane_keyword(mane: str) -> str:
+    """Return the canonical NCBI keyword for a MANE transcript type.
+
+    Raises
+    ------
+    ValueError
+        If *mane* is not ``"MANE Select"`` or ``"MANE Plus Clinical"``
+        (case-insensitive).
+    """
+    keyword = _MANE_TYPES.get(mane.strip().lower())
+    if keyword is None:
+        raise ValueError(
+            "mane must be 'MANE Select' or 'MANE Plus Clinical', got {!r}".format(mane)
+        )
+    return keyword
 
 
 def _retry_on_error(func, max_retries=5, base_delay=2.0):
@@ -65,29 +89,39 @@ def _dont_cache_errors(cached_func):
 @_dont_cache_errors
 @functools.lru_cache(maxsize=16)
 @_retry_on_error
-def nm(gene: str):
-    """Fetch the MANE Select/Plus Clinical nucleotide record for a gene.
+def nm(gene: str, mane: str = "MANE Select"):
+    """Fetch the MANE nucleotide record for a gene.
+
+    Parameters
+    ----------
+    gene : str
+        Gene symbol (e.g. "G6PD").
+    mane : str
+        MANE transcript type: ``"MANE Select"`` (default) or
+        ``"MANE Plus Clinical"``. Case-insensitive.
 
     Returns a Bio.SeqRecord from GenBank format.
 
     >>> from varsim._fetch import nm
-    >>> seq = nm("G6PD")
+    >>> seq = nm("G6PD")  # doctest: +SKIP
     >>> seq.id  # doctest: +SKIP
     'NM_001360016.2'
     >>> len(seq.seq) > 1000  # doctest: +SKIP
     True
     """
-    logger.info("Fetching nucleotide record for %s from NCBI Entrez ...", gene)
+    keyword = _mane_keyword(mane)
+    logger.info("Fetching nucleotide record for %s (%s) from NCBI Entrez ...", gene, keyword)
     t0 = time.perf_counter()
     stream = Entrez.esearch(
         db="nucleotide",
-        term=f'{gene}[Gene Name] AND ("MANE Select"[Keyword] OR "MANE Plus Clinical"[keyword])',
+        term=f'{gene}[Gene Name] AND "{keyword}"[Keyword]',
     )
     record = Entrez.read(stream)
     stream = Entrez.efetch(
         db="nucleotide", id=record["IdList"], rettype="gb", retmode="text"
     )
-    seqrecord = SeqIO.read(stream, "genbank")
+    # Some genes match more than one MANE record (e.g. GNAL); use the first.
+    seqrecord = next(SeqIO.parse(stream, "genbank"))
     dt = time.perf_counter() - t0
     logger.debug("nm(%s) → %s (%.2fs)", gene, seqrecord.id, dt)
     return seqrecord
@@ -96,27 +130,44 @@ def nm(gene: str):
 @_dont_cache_errors
 @functools.lru_cache(maxsize=16)
 @_retry_on_error
-def np(gene: str):
-    """Fetch the MANE Select/Plus Clinical protein record for a gene.
+def np(gene: str, mane: str = "MANE Select"):
+    """Fetch the protein record paired with the gene's MANE transcript.
+
+    The protein accession is taken from the transcript's CDS /protein_id
+    qualifier, which guarantees correct transcript–protein pairing (a
+    gene-level protein search can match several MANE records).
+
+    Parameters
+    ----------
+    gene : str
+        Gene symbol (e.g. "G6PD").
+    mane : str
+        MANE transcript type: ``"MANE Select"`` (default) or
+        ``"MANE Plus Clinical"``. Case-insensitive.
 
     Returns a Bio.SeqRecord from FASTA format.
 
     >>> from varsim._fetch import np
     >>> seq = np("G6PD")  # doctest: +SKIP
     >>> seq.id  # doctest: +SKIP
-    'NP_001347945.1'
+    'NP_001346945.1'
     >>> len(seq.seq) > 100  # doctest: +SKIP
     True
     """
     logger.info("Fetching protein record for %s ...", gene)
     t0 = time.perf_counter()
-    stream = Entrez.esearch(
-        db="protein",
-        term=f'{gene}[Gene Name] AND ("MANE Select"[Keyword] OR "MANE Plus Clinical"[keyword])',
-    )
-    record = Entrez.read(stream)
+    transcript = nm(gene, mane=mane)
+    protein_id = None
+    for feature in transcript.features:
+        if feature.type == "CDS":
+            ids = feature.qualifiers.get("protein_id")
+            if ids:
+                protein_id = ids[0]
+            break
+    if protein_id is None:
+        raise ValueError(f"No protein_id qualifier on the CDS feature of {transcript.id}")
     stream = Entrez.efetch(
-        db="protein", id=record["IdList"], rettype="fasta", retmode="text"
+        db="protein", id=protein_id, rettype="fasta", retmode="text"
     )
     seqrecord = SeqIO.read(stream, "fasta")
     dt = time.perf_counter() - t0
@@ -149,7 +200,9 @@ def nc(gene: str) -> str:
     stream = Entrez.efetch(
         db="nucleotide", id=record["IdList"], rettype="acc", retmode="text"
     )
-    acc = stream.read().strip()
+    # The search can match more than one assembly record; the first
+    # accession corresponds to the gene's primary assembly.
+    acc = stream.read().strip().split("\n")[0]
     dt = time.perf_counter() - t0
     logger.debug("nc(%s) → %s (%.2fs)", gene, acc, dt)
     return acc

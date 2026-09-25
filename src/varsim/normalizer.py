@@ -1,7 +1,8 @@
 """HGVS variant normalizer.
 
 Implements HGVS nomenclature normalization rules:
-- 3-prime shifting (shift variants as far 3' as equivalent)
+- 3-prime shifting (deletions and duplications only; per the HGVS
+  recommendations the 3' rule does NOT apply to substitutions)
 - Insertion-to-duplication conversion (ins → dup)
 - Allele representation minimization
 - Range normalization (start ≤ end, single-position collapse)
@@ -173,8 +174,10 @@ def _make_range_variant(
 def normalize_3prime_shift(hgvs_str: str, ref_seq: str) -> str:
     """Shift a variant as far 3' as possible while maintaining equivalence.
 
-    For substitutions: shift right while the base at the next position
-    matches the reference allele.
+    Per the HGVS recommendations, the 3' rule applies to deletions,
+    duplications, and insertions that are rewritten as duplications; it
+    does NOT apply to substitutions, which are left unchanged.
+
     For deletions: shift right while the deleted sequence repeats
     immediately 3' of the deletion.
     For duplications: shift right while the duplicated sequence repeats
@@ -199,14 +202,8 @@ def normalize_3prime_shift(hgvs_str: str, ref_seq: str) -> str:
 
     Examples
     --------
+    >>> # Substitutions are NOT shifted (3' rule does not apply)
     >>> normalize_3prime_shift("NM_000207.3:c.1A>G", "AAGC")
-    'NM_000207.3:c.2A>G'
-
-    >>> normalize_3prime_shift("NM_000207.3:c.4T>C", "ATTTTC")
-    'NM_000207.3:c.5T>C'
-
-    >>> # No shift possible (next base differs)
-    >>> normalize_3prime_shift("NM_000207.3:c.1A>G", "ACGT")
     'NM_000207.3:c.1A>G'
 
     >>> # Deletion shift
@@ -232,7 +229,8 @@ def normalize_3prime_shift(hgvs_str: str, ref_seq: str) -> str:
     vt = tag.variant_type
 
     if vt == "substitution":
-        return _shift_substitution_3prime(tag, ref_seq)
+        # The HGVS 3' rule does not apply to substitutions.
+        return hgvs_str
     elif vt == "deletion":
         return _shift_deletion_3prime(tag, ref_seq)
     elif vt == "duplication":
@@ -240,20 +238,6 @@ def normalize_3prime_shift(hgvs_str: str, ref_seq: str) -> str:
     else:
         # Other variant types not shifted
         return hgvs_str
-
-
-def _shift_substitution_3prime(tag: HGVSTag, ref_seq: str) -> str:
-    """Shift a substitution right (3') as far as possible."""
-    ref_base = tag.ref
-    if not ref_base or len(ref_base) != 1:
-        return tag.original
-
-    pos = tag.start_pos
-    # Keep shifting right while the next position has the same ref base
-    while pos < len(ref_seq) and ref_seq[pos] == ref_base:  # pos is 1-based, ref_seq[pos] is 0-based index pos
-        pos += 1
-
-    return _make_single_pos_variant(tag, new_pos=pos)
 
 
 def _shift_deletion_3prime(tag: HGVSTag, ref_seq: str) -> str:
@@ -350,11 +334,17 @@ def ins_to_dup(hgvs_str: str, ref_seq: str) -> str:
 
     Examples
     --------
+    >>> # Insertion duplicates the sequence immediately 5' of the site
     >>> ins_to_dup("NM_000207.3:c.4_5insA", "TAAA")
-    'NM_000207.3:c.3dup'
+    'NM_000207.3:c.4dupA'
 
+    >>> # Insertion duplicates the sequence immediately 3' (3'-most placed)
+    >>> ins_to_dup("NM_000207.3:c.1_2insC", "CCT")
+    'NM_000207.3:c.2dupC'
+
+    >>> # Inserted bases match neither flanking sequence
     >>> ins_to_dup("NM_000207.3:c.5_6insAC", "TGACAC")
-    'NM_000207.3:c.3_4dup'
+    'NM_000207.3:c.5_6insAC'
 
     >>> # Inserted bases do not match preceding sequence
     >>> ins_to_dup("NM_000207.3:c.4_5insG", "TAAC")
@@ -388,28 +378,41 @@ def ins_to_dup(hgvs_str: str, ref_seq: str) -> str:
     ins_len = len(inserted)
     sp = tag.start_pos
 
-    # The insertion is between start_pos and end_pos
-    # The sequence 5' (upstream) of the insertion is at positions [sp - ins_len, sp - 1]
-    upstream_start = sp - ins_len
-    if upstream_start < 1:
-        return hgvs_str  # Not enough upstream sequence
+    # The insertion is between start_pos and end_pos; the sequence 5'
+    # (upstream) of the insertion therefore ENDS at start_pos, i.e. it
+    # occupies positions [sp - ins_len + 1, sp].
+    upstream_start = sp - ins_len + 1
+    up_match = False
+    if upstream_start >= 1:
+        upstream_seq = ref_seq[upstream_start - 1 : sp]
+        up_match = upstream_seq.upper() == inserted.upper()
 
-    upstream_seq = ref_seq[upstream_start - 1 : sp - 1]
+    # HGVS also permits ins→dup when the inserted sequence duplicates the
+    # sequence immediately 3' (downstream) of the insertion site; per the
+    # 3' rule the duplication is then placed at the 3'-most position.
+    downstream_seq = ref_seq[sp : sp + ins_len] if sp + ins_len <= len(ref_seq) else ''
+    down_match = downstream_seq.upper() == inserted.upper()
 
-    if upstream_seq.upper() == inserted.upper():
+    if up_match or down_match:
         # Convert to duplication (clear alt — bases inferred from reference)
+        if down_match and not up_match:
+            new_start = sp + 1
+        else:
+            new_start = upstream_start
         if ins_len == 1:
-            return _make_single_pos_variant(
-                tag, new_pos=upstream_start, alt=None, variant_type="duplication"
+            result = _make_single_pos_variant(
+                tag, new_pos=new_start, alt=None, variant_type="duplication"
             )
         else:
-            return _make_range_variant(
+            result = _make_range_variant(
                 tag,
-                start_pos=upstream_start,
-                end_pos=sp - 1,
+                start_pos=new_start,
+                end_pos=new_start + ins_len - 1,
                 alt=None,
                 variant_type="duplication",
             )
+        # Apply the 3' rule to the resulting duplication.
+        return normalize_3prime_shift(result, ref_seq)
 
     return hgvs_str
 
@@ -542,8 +545,9 @@ def normalize(hgvs_str: str, ref_seq: Optional[str] = None) -> str:
 
     Applies the following steps in order:
 
-    1. **3-prime shift**: Shift substitutions, deletions, and duplications
-       as far 3' as possible while maintaining equivalence.
+    1. **3-prime shift**: Shift deletions and duplications as far 3' as
+       possible while maintaining equivalence. Per the HGVS
+       recommendations, substitutions are NOT shifted.
     2. **ins → dup conversion**: If an insertion duplicates the preceding
        sequence, rewrite it as a duplication.
     3. **Minimize allele representation**: Trim identical flanking bases
@@ -572,11 +576,12 @@ def normalize(hgvs_str: str, ref_seq: Optional[str] = None) -> str:
 
     Examples
     --------
+    >>> # Substitutions are not 3'-shifted
     >>> normalize("NM_000207.3:c.1A>G", "AAGC")
-    'NM_000207.3:c.2A>G'
+    'NM_000207.3:c.1A>G'
 
     >>> normalize("NM_000207.3:c.4_5insA", "TAAA")
-    'NM_000207.3:c.3dup'
+    'NM_000207.3:c.4dupA'
 
     >>> # No ref_seq: only range normalization
     >>> normalize("NM_000207.3:c.5_4del")
